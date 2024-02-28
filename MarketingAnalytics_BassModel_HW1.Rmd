@@ -1,0 +1,115 @@
+---
+title: "Marketing Analytics"
+author: "Anna Movsisyan"
+date: "2024-02-24"
+output: pdf_document
+---
+
+Innovation : Sony Access Controller for PS5
+Look-alike innovation : Sony PS4 console
+
+Reason of choosing look-alike innovation:
+  The Sony PS5 Access Controller is a game-changing invention that deviates greatly from its predecessor, the Sony PS4 system, by emphasising accessibility above traditional improvements. The PS4 was praised for bringing gaming to a new level with its enhanced visuals, immersive experiences, and intuitive interface. On the other hand, the Access Controller brings attention to accessibility, a crucial but little-considered factor. With its revolutionary design, this controller demonstrates Sony's commitment to breaking down the barriers that have historically kept disabled gamers at a disadvantage.
+  The comparison of these twoi nnovations highlights a radical change in the gaming industry's priorities, moving away from a narrow concentration on technology development and towards a more inclusive vision. The PS4 established the standard by providing a broad audience with a top-notch gaming experience. On the other hand, the Access Controller for PS5 widens this scope even more, guaranteeing that those with a range of physical limitations may enjoy the fun and camaraderie of gaming. This development shows a better grasp of accessibility as a fundamental component of design, rather than as an afterthought.It draws attention to Sony's leadership in guiding the gaming industry towards an improved future in which everyone may benefit from play, pushing the sector to reconsider the nature of gamers and the requirements necessary for them to participate fully in video games.
+  
+```{r}
+library(readxl)
+library(tidyverse)
+library(nls.multstart)
+library(broom)
+library(dplyr)
+libs <- c('ggplot2','ggpubr','knitr','diffusion')
+load_libraries<-function(libs){
+  new_libs <- libs[!(libs %in% installed.packages()[,"Package"])]
+  if(length(new_libs)>0) {install.packages(new_libs)}
+  lapply(libs, library, character.only = TRUE)
+  }
+load_libraries(libs)
+
+```
+
+```{r}
+PS4_console <- read_csv("/Users/annamovsisyan/Desktop/PS4_Annual_Sales.csv")
+```
+  
+Justification for choosing data:
+  First of all, it indicates the PlayStation 4's adoption rate and financial success. The innovation of the PS4 lies not only in its improvements in hardware and software but also in the way it spread through the market. This is the path that any future innovation, such as the Sony Access Controller for PS5, would follow. 
+  Second, the market potential for the Access Controller is directly impacted by the PS4's historical sales data, which serves as a proxy for the platform's active user base. A large user base might indicate that there is a greater need for accessories that work with the game, particularly those that improve accessibility for players.
+  Finally, by examining the PS4 console innovation's lifespan, this time series gives us a background to evaluate the introduction and possible acceptance curve of the Access Controller. Innovations frequently exhibit similar trends: they gain traction among early adopters before maturing and declining. Sony can forecast and plan the release of the Access Controller by knowing where the PS4 is in its lifespan. This allows them to take advantage of the current PS4 market and get ready for the inevitable switch to the PS5.
+
+
+
+```{r}
+sales <- PS4_console$Annual_Sales
+t = 1:length(sales)
+bass_m = nls(sales ~ m*(((p+q)^2/p)*exp(-(p+q)*t))/(1+(q/p)*exp(-(p+q)*t))^2, 
+             start=c(list(m=sum(sales),p=0.02,q=0.4)))
+
+summary(bass_m)
+p <- coef(bass_m)["p"]
+q <- coef(bass_m)["q"]
+
+```
+
+  From the estimates of m, p, and q it appears that both parameters significantly contribute to the model since parameter m is significant at the 0.01 level and parameter q is significant at the 0.05 level. The fact that the parameter p is not statistically significant (p-value > 0.05) suggests that the model may not be significantly affected by it. With seven degrees of freedom, the residual standard error of 8.807 is the average distance between the data points and the fitted model line. Finally, the model required 13 iterations to converge, falling within the 4.256e-06 convergence tolerance. This suggests that the model's answer is stable and trustworthy for the given data.
+
+```{r}
+
+PS_sales = PS4_console$Annual_Sales
+
+diff_m = diffusion(PS_sales)
+
+p_sales = round(diff_m$w, 4)[1]
+q_sales = round(diff_m$w, 4)[2]
+m_sales = round(diff_m$w, 4)[3]
+
+diff_m
+```
+The coefficients p and q are too high, so we need further estimations for this model, that's why we will go with the first method.
+
+
+  
+Market Potential estimation (Fermi's method)
+
+  Firstly we can take the numbers of Play Station 5 consoles sold worldwide. As of October 2023, the PlayStation 5 has sold 46.6 million units worldwide (source: https://www.gamesindustry.biz/ps5-sales-hit-50-million-worldwide#:~:text=PlayStation%205%20has%20sold%2050,week%20behind%20the%20PlayStation%204)
+  From those people owning PS5 let's assume 10% will buy accessories for the device initially. SO we have a number equal to 4.66 million. 
+We can assume that not all of those who buy accessories, will risk to by the inovatory product, so let's take only 20% will do so, which equals to 932000. This number can be considered as the potential market for the selected product.
+
+
+```{r}
+bass.f <- function(t,p,q){
+((p+q)^2/p)*exp(-(p+q)*t)/
+(1+(q/p)*exp(-(p+q)*t))^2
+}
+
+bass.F <- function(t,p,q){
+(1-exp(-(p+q)*t))/
+(1+(q/p)*exp(-(p+q)*t))
+}
+
+m <- 932000
+t <- c(1:10)
+pred <- bass.f(t = t, p = p, q = q)*m
+pred_df <- data.frame(t = t, pred = pred)
+pred1 <- bass.F(t = t, p = p, q = q)
+pred1_df <- data.frame(t = t, pred = pred1)
+p1 <- ggplot(pred_df, aes(x = t, y = pred)) + geom_line() + ggtitle("Number of adoptions at time t")
+p2<- ggplot(pred1_df, aes(x = t, y = pred1)) + geom_line() + ggtitle("Cummulative addoptions")
+
+ggarrange(p1,p2)
+```
+
+
+```{r}
+
+pred_peaktime <- log(q/p)/(p+q)
+act_peaktime <- which.max(PS4_console$Annual_Sales)
+
+compar_df <- data.frame(Predicted = pred_peaktime, Actual = act_peaktime)
+
+compar_df
+```
+
+
+
+
