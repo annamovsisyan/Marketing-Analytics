@@ -29,7 +29,7 @@ load_libraries(libs)
 ```
 
 ```{r}
-PS4_console <- read_csv("/Users/annamovsisyan/Desktop/PS4_Annual_Sales.csv")
+PS4_console <- read_csv("PS4_Annual_Sales.csv")
 ```
   
 Justification for choosing data:
